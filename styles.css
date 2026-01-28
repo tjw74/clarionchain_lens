@@ -15,12 +15,17 @@ body {
   color: #ffffff;
   line-height: 1.6;
   font-size: 14px;
-  width: 400px;
+  min-width: 450px;
+  max-width: 600px;
+  width: 100%;
   min-height: 600px;
+  overflow-x: hidden;
 }
 
 .container {
-  padding: 20px;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 header {
@@ -34,6 +39,8 @@ header h1 {
   font-weight: 600;
   color: #00ff00;
   margin-bottom: 4px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .subtitle {
@@ -50,6 +57,8 @@ header h1 {
   font-weight: 600;
   margin-bottom: 16px;
   color: #ffffff;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .form-group {
@@ -62,6 +71,12 @@ header h1 {
   font-size: 13px;
   font-weight: 500;
   color: #cccccc;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.form-group label input[type="checkbox"] {
+  vertical-align: middle;
 }
 
 .form-group input[type="text"],
@@ -95,15 +110,26 @@ header h1 {
   margin-top: 4px;
   font-size: 11px;
   color: #888888;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
 }
 
 .api-key-container {
   display: flex;
   gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .api-key-container input {
   flex: 1;
+  min-width: 0; /* Allows input to shrink */
+}
+
+.api-key-container .btn {
+  flex-shrink: 0; /* Prevents button from shrinking */
+  white-space: nowrap;
 }
 
 .status-message {
@@ -134,6 +160,9 @@ header h1 {
   cursor: pointer;
   transition: all 0.2s;
   font-family: inherit;
+  white-space: nowrap;
+  overflow: visible;
+  box-sizing: border-box;
 }
 
 .btn:disabled {
@@ -201,6 +230,8 @@ header h1 {
   color: #ff6666;
   font-size: 13px;
   margin-bottom: 16px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .analysis-result {
@@ -216,25 +247,35 @@ header h1 {
   align-items: center;
   padding: 12px 16px;
   border-bottom: 1px solid #333333;
+  gap: 12px;
 }
 
 .analysis-header h3 {
-  font-size: 14px;
-  font-weight: 600;
-  color: #ffffff;
+  flex: 1;
+  min-width: 0; /* Allows text to wrap if needed */
+}
+
+.analysis-header .btn {
+  flex-shrink: 0; /* Prevents button from shrinking */
 }
 
 .analysis-content {
   padding: 16px;
   max-height: 400px;
   overflow-y: auto;
+  overflow-x: hidden;
   font-size: 13px;
   line-height: 1.7;
   color: #e0e0e0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .analysis-content p {
   margin-bottom: 12px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .analysis-content strong {
