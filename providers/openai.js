@@ -45,9 +45,10 @@ Please provide a comprehensive analysis following the structure outlined in your
  * @param {Object} metadata - Chart metadata
  * @param {string} apiKey - OpenAI API key
  * @param {Function} onChunk - Optional streaming callback
+ * @param {Array} conversationHistory - Previous conversation messages
  * @returns {Promise<string>} Analysis text
  */
-export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = null) {
+export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = null, conversationHistory = []) {
   if (!apiKey) {
     throw new Error('OpenAI API key is required');
   }
@@ -59,19 +60,34 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
 
   const { systemPrompt, userPrompt } = createAnalysisPrompt(metadata);
 
-  const requestBody = {
-    model: DEFAULT_MODEL,
-    messages: [
-      {
-        role: 'system',
-        content: systemPrompt
-      },
-      {
+  // Build messages array
+  const messages = [
+    {
+      role: 'system',
+      content: systemPrompt
+    }
+  ];
+
+  // If there's conversation history, this is a follow-up question
+  if (conversationHistory.length > 0) {
+    // Add all conversation history except the last user message (we'll add it with image)
+    const historyWithoutLast = conversationHistory.slice(0, -1);
+    historyWithoutLast.forEach(msg => {
+      messages.push({
+        role: msg.role,
+        content: msg.content
+      });
+    });
+
+    // Add the latest user question with the image
+    const lastUserMessage = conversationHistory[conversationHistory.length - 1];
+    if (lastUserMessage && lastUserMessage.role === 'user') {
+      messages.push({
         role: 'user',
         content: [
           {
             type: 'text',
-            text: userPrompt
+            text: lastUserMessage.content
           },
           {
             type: 'image_url',
@@ -80,8 +96,30 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
             }
           }
         ]
-      }
-    ],
+      });
+    }
+  } else {
+    // Initial analysis - include image with prompt
+    messages.push({
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: userPrompt
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: `data:image/png;base64,${base64Image}`
+          }
+        }
+      ]
+    });
+  }
+
+  const requestBody = {
+    model: DEFAULT_MODEL,
+    messages: messages,
     max_tokens: 1500,
     temperature: 0.7
   };

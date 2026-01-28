@@ -160,7 +160,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * Handle chart analysis request
  * This runs in the background script to keep API keys secure
  */
-async function handleAnalyzeChart({ imageDataUrl, metadata, provider }) {
+async function handleAnalyzeChart({ imageDataUrl, metadata, provider, conversationHistory = [] }) {
   // Rate limiting
   const now = Date.now();
   if (now - lastAnalysisTime < MIN_ANALYSIS_INTERVAL) {
@@ -177,8 +177,8 @@ async function handleAnalyzeChart({ imageDataUrl, metadata, provider }) {
   // Get provider module
   const providerModule = getProvider(provider);
 
-  // Analyze chart
-  const analysis = await providerModule.analyzeChart(imageDataUrl, metadata, apiKey);
+  // Analyze chart with conversation history
+  const analysis = await providerModule.analyzeChart(imageDataUrl, metadata, apiKey, null, conversationHistory);
   
   return { analysis };
 }

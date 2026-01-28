@@ -35,9 +35,10 @@ Be concise and professional. Avoid giving financial advice. Focus on objective t
  * @param {Object} metadata - Chart metadata
  * @param {string} apiKey - Google API key
  * @param {Function} onChunk - Optional streaming callback (not supported by Gemini)
+ * @param {Array} conversationHistory - Previous conversation messages
  * @returns {Promise<string>} Analysis text
  */
-export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = null) {
+export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = null, conversationHistory = []) {
   if (!apiKey) {
     throw new Error('Google API key is required');
   }

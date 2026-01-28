@@ -14,15 +14,20 @@ const manualSelectionCheckbox = document.getElementById('manual-selection');
 const analyzeBtn = document.getElementById('analyze-btn');
 const loadingIndicator = document.getElementById('loading-indicator');
 const errorMessage = document.getElementById('error-message');
-const analysisResult = document.getElementById('analysis-result');
-const analysisContent = document.getElementById('analysis-content');
-const copyBtn = document.getElementById('copy-btn');
+const chatContainer = document.getElementById('chat-container');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const sendBtn = document.getElementById('send-btn');
+const newAnalysisBtn = document.getElementById('new-analysis-btn');
+const copyConversationBtn = document.getElementById('copy-conversation-btn');
 const settingsGear = document.getElementById('settings-gear');
 const settingsModal = document.getElementById('settings-modal');
 const closeSettingsBtn = document.getElementById('close-settings');
 
 let currentProvider = 'openai';
-let currentAnalysis = '';
+let conversationHistory = [];
+let currentChartImage = null;
+let currentChartMetadata = null;
 
 /**
  * Initialize side panel
@@ -39,7 +44,15 @@ async function init() {
 
   saveKeyBtn.addEventListener('click', handleSaveApiKey);
   analyzeBtn.addEventListener('click', handleAnalyze);
-  copyBtn.addEventListener('click', handleCopy);
+  sendBtn.addEventListener('click', handleSendMessage);
+  chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  });
+  newAnalysisBtn.addEventListener('click', clearConversation);
+  copyConversationBtn.addEventListener('click', handleCopyConversation);
   settingsGear.addEventListener('click', openSettings);
   closeSettingsBtn.addEventListener('click', closeSettings);
   
@@ -183,10 +196,11 @@ async function validateApiKey(provider, apiKey) {
 async function handleAnalyze() {
   // Reset UI
   hideError();
-  analysisResult.style.display = 'none';
+  clearConversation();
   loadingIndicator.style.display = 'block';
   analyzeBtn.disabled = true;
-  currentAnalysis = '';
+  chatInput.disabled = true;
+  sendBtn.disabled = true;
 
   try {
     // Get current tab
@@ -230,13 +244,18 @@ async function handleAnalyze() {
 
     const imageDataUrl = screenshotResponse.imageDataUrl;
 
-    // Send to background script for analysis
+    // Store chart data for follow-ups
+    currentChartImage = imageDataUrl;
+    currentChartMetadata = metadata;
+
+    // Send to background script for analysis (no conversation history for initial)
     const analysisResponse = await chrome.runtime.sendMessage({
       action: 'analyzeChart',
       data: {
         imageDataUrl,
         metadata,
-        provider: currentProvider
+        provider: currentProvider,
+        conversationHistory: []
       }
     });
 
@@ -244,9 +263,15 @@ async function handleAnalyze() {
       throw new Error(analysisResponse.error || 'Failed to analyze chart');
     }
 
-    // Display result
-    currentAnalysis = analysisResponse.data.analysis;
-    displayAnalysis(currentAnalysis);
+    // Display result as first message
+    const analysis = analysisResponse.data.analysis;
+    addMessage('assistant', analysis);
+    conversationHistory.push({ role: 'assistant', content: analysis });
+
+    // Show chat interface
+    chatContainer.style.display = 'flex';
+    chatInput.disabled = false;
+    sendBtn.disabled = false;
 
   } catch (error) {
     showError(error.message || 'An error occurred during analysis');
@@ -257,44 +282,147 @@ async function handleAnalyze() {
 }
 
 /**
- * Display analysis result
+ * Add a message to the chat
  */
-function displayAnalysis(text) {
-  analysisContent.textContent = text;
+function addMessage(role, content) {
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `chat-message ${role}`;
   
-  // Format text with basic markdown-like formatting
+  const bubble = document.createElement('div');
+  bubble.className = `message-bubble ${role}`;
+  
+  if (role === 'assistant') {
+    // Format markdown for assistant messages
+    bubble.innerHTML = formatMessage(content);
+  } else {
+    bubble.textContent = content;
+  }
+  
+  messageDiv.appendChild(bubble);
+  chatMessages.appendChild(messageDiv);
+  
+  // Auto-scroll to bottom
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+/**
+ * Format message content with markdown
+ */
+function formatMessage(text) {
   let formatted = text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/#{3}\s+(.*?)(?=\n|$)/g, '<h3>$1</h3>')
+    .replace(/#{2}\s+(.*?)(?=\n|$)/g, '<h2>$1</h2>')
+    .replace(/#{1}\s+(.*?)(?=\n|$)/g, '<h1>$1</h1>')
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>');
   
   formatted = '<p>' + formatted + '</p>';
-  
-  analysisContent.innerHTML = formatted;
-  analysisResult.style.display = 'block';
+  return formatted;
 }
 
 /**
- * Handle copy to clipboard
+ * Clear conversation and reset UI
  */
-async function handleCopy() {
-  if (!currentAnalysis) return;
+function clearConversation() {
+  conversationHistory = [];
+  currentChartImage = null;
+  currentChartMetadata = null;
+  chatMessages.innerHTML = '';
+  chatContainer.style.display = 'none';
+  chatInput.value = '';
+  chatInput.disabled = true;
+  sendBtn.disabled = true;
+}
+
+/**
+ * Handle sending a follow-up message
+ */
+async function handleSendMessage() {
+  const question = chatInput.value.trim();
+  if (!question || !currentChartImage) return;
+
+  // Add user message to UI
+  addMessage('user', question);
+  conversationHistory.push({ role: 'user', content: question });
+
+  // Clear input and disable
+  chatInput.value = '';
+  chatInput.disabled = true;
+  sendBtn.disabled = true;
+
+  // Show loading indicator
+  const loadingMsg = document.createElement('div');
+  loadingMsg.className = 'chat-message assistant';
+  loadingMsg.innerHTML = '<div class="message-bubble assistant"><div class="spinner" style="width: 16px; height: 16px; margin: 0 auto;"></div></div>';
+  chatMessages.appendChild(loadingMsg);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 
   try {
-    await navigator.clipboard.writeText(currentAnalysis);
+    // Send to background script with conversation history (include the user question)
+    const response = await chrome.runtime.sendMessage({
+      action: 'analyzeChart',
+      data: {
+        imageDataUrl: currentChartImage,
+        metadata: currentChartMetadata,
+        provider: currentProvider,
+        conversationHistory: conversationHistory // Include full history including the question
+      }
+    });
+
+    // Remove loading indicator
+    chatMessages.removeChild(loadingMsg);
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to get response');
+    }
+
+    // Add assistant response
+    const assistantResponse = response.data.analysis;
+    addMessage('assistant', assistantResponse);
+    conversationHistory.push({ role: 'assistant', content: assistantResponse });
+
+  } catch (error) {
+    // Remove loading indicator
+    if (loadingMsg.parentNode) {
+      chatMessages.removeChild(loadingMsg);
+    }
+    addMessage('assistant', `Error: ${error.message}`);
+  } finally {
+    chatInput.disabled = false;
+    sendBtn.disabled = false;
+    chatInput.focus();
+  }
+}
+
+/**
+ * Handle copying entire conversation to clipboard
+ */
+async function handleCopyConversation() {
+  if (conversationHistory.length === 0) return;
+
+  try {
+    const conversationText = conversationHistory
+      .map(msg => {
+        const role = msg.role === 'user' ? 'You' : 'AI';
+        return `${role}: ${msg.content}`;
+      })
+      .join('\n\n');
+    
+    await navigator.clipboard.writeText(conversationText);
     
     // Show feedback
-    const originalText = copyBtn.textContent;
-    copyBtn.textContent = 'Copied!';
-    copyBtn.classList.add('btn-success');
+    const originalText = copyConversationBtn.textContent;
+    copyConversationBtn.textContent = 'Copied!';
+    copyConversationBtn.classList.add('btn-success');
     
     setTimeout(() => {
-      copyBtn.textContent = originalText;
-      copyBtn.classList.remove('btn-success');
+      copyConversationBtn.textContent = originalText;
+      copyConversationBtn.classList.remove('btn-success');
     }, 2000);
   } catch (error) {
-    showError('Failed to copy to clipboard');
+    showError('Failed to copy conversation to clipboard');
   }
 }
 

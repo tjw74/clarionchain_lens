@@ -35,9 +35,10 @@ Be concise and professional. Avoid giving financial advice. Focus on objective t
  * @param {Object} metadata - Chart metadata
  * @param {string} apiKey - Anthropic API key
  * @param {Function} onChunk - Optional streaming callback
+ * @param {Array} conversationHistory - Previous conversation messages
  * @returns {Promise<string>} Analysis text
  */
-export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = null) {
+export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = null, conversationHistory = []) {
   if (!apiKey) {
     throw new Error('Anthropic API key is required');
   }

@@ -78,12 +78,25 @@
 
       <div id="error-message" class="error-message" style="display: none;"></div>
 
-      <div id="analysis-result" class="analysis-result" style="display: none;">
-        <div class="analysis-header">
-          <h3>Analysis Result</h3>
-          <button id="copy-btn" class="btn btn-secondary">Copy</button>
+      <div id="chat-container" class="chat-container" style="display: none;">
+        <div class="chat-header">
+          <h3>Chart Analysis</h3>
+          <div class="chat-header-actions">
+            <button id="new-analysis-btn" class="btn btn-secondary btn-small">New Analysis</button>
+            <button id="copy-conversation-btn" class="btn btn-secondary btn-small">Copy</button>
+          </div>
         </div>
-        <div id="analysis-content" class="analysis-content"></div>
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input-container">
+          <input 
+            type="text" 
+            id="chat-input" 
+            class="chat-input" 
+            placeholder="Ask a follow-up question about the chart..."
+            disabled
+          />
+          <button id="send-btn" class="btn btn-primary btn-small" disabled>Send</button>
+        </div>
       </div>
     </div>
 
