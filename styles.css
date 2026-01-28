@@ -91,33 +91,19 @@ header h1 {
   font-size: 15px;
   font-weight: 600;
   color: #ffffff;
+  flex: 1;
 }
 
 .collapsible-header.collapsed .collapse-icon {
   transform: rotate(-90deg);
 }
 
-.collapse-toggle {
-  background: none;
-  border: none;
-  color: #00ff00;
-  cursor: pointer;
-  padding: 4px 8px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s;
-}
-
-.collapse-toggle:hover {
-  opacity: 0.8;
-}
-
 .collapse-icon {
   display: inline-block;
   transition: transform 0.2s;
   font-size: 10px;
+  color: #00ff00;
+  margin-left: 8px;
 }
 
 .collapsible-content {

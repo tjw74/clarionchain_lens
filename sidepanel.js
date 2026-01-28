@@ -17,7 +17,6 @@ const errorMessage = document.getElementById('error-message');
 const analysisResult = document.getElementById('analysis-result');
 const analysisContent = document.getElementById('analysis-content');
 const copyBtn = document.getElementById('copy-btn');
-const settingsToggle = document.getElementById('settings-toggle');
 const settingsContent = document.getElementById('settings-content');
 const settingsHeader = document.getElementById('settings-header');
 
@@ -44,7 +43,7 @@ async function init() {
   saveKeyBtn.addEventListener('click', handleSaveApiKey);
   analyzeBtn.addEventListener('click', handleAnalyze);
   copyBtn.addEventListener('click', handleCopy);
-  settingsToggle.addEventListener('click', toggleSettings);
+  settingsHeader.addEventListener('click', toggleSettings);
 
   // Check if we're on bitview.space
   checkCurrentTab();
