@@ -64,6 +64,69 @@ header h1 {
   overflow-wrap: break-word;
 }
 
+/* Collapsible section styles */
+.collapsible-section {
+  border: 1px solid #333333;
+  border-radius: 4px;
+  background: #1a1a1a;
+  overflow: hidden;
+}
+
+.collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.collapsible-header:hover {
+  background: #222222;
+}
+
+.collapsible-header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.collapsible-header.collapsed .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.collapse-toggle {
+  background: none;
+  border: none;
+  color: #00ff00;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.collapse-toggle:hover {
+  opacity: 0.8;
+}
+
+.collapse-icon {
+  display: inline-block;
+  transition: transform 0.2s;
+  font-size: 10px;
+}
+
+.collapsible-content {
+  padding: 12px;
+  border-top: 1px solid #333333;
+  transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+  overflow: hidden;
+}
+
 .form-group {
   margin-bottom: 16px;
 }

@@ -17,9 +17,13 @@ const errorMessage = document.getElementById('error-message');
 const analysisResult = document.getElementById('analysis-result');
 const analysisContent = document.getElementById('analysis-content');
 const copyBtn = document.getElementById('copy-btn');
+const settingsToggle = document.getElementById('settings-toggle');
+const settingsContent = document.getElementById('settings-content');
+const settingsHeader = document.getElementById('settings-header');
 
 let currentProvider = 'openai';
 let currentAnalysis = '';
+let settingsCollapsed = false;
 
 /**
  * Initialize side panel
@@ -27,6 +31,9 @@ let currentAnalysis = '';
 async function init() {
   // Load saved API key for current provider
   await loadApiKeyStatus();
+
+  // Load collapsed state
+  await loadCollapsedState();
 
   // Event listeners
   providerSelect.addEventListener('change', async (e) => {
@@ -37,9 +44,48 @@ async function init() {
   saveKeyBtn.addEventListener('click', handleSaveApiKey);
   analyzeBtn.addEventListener('click', handleAnalyze);
   copyBtn.addEventListener('click', handleCopy);
+  settingsToggle.addEventListener('click', toggleSettings);
 
   // Check if we're on bitview.space
   checkCurrentTab();
+}
+
+/**
+ * Load collapsed state from storage
+ */
+async function loadCollapsedState() {
+  const result = await chrome.storage.local.get(['settingsCollapsed']);
+  settingsCollapsed = result.settingsCollapsed || false;
+  updateSettingsVisibility();
+}
+
+/**
+ * Save collapsed state to storage
+ */
+async function saveCollapsedState() {
+  await chrome.storage.local.set({ settingsCollapsed });
+}
+
+/**
+ * Toggle settings section
+ */
+function toggleSettings() {
+  settingsCollapsed = !settingsCollapsed;
+  updateSettingsVisibility();
+  saveCollapsedState();
+}
+
+/**
+ * Update settings visibility based on collapsed state
+ */
+function updateSettingsVisibility() {
+  if (settingsCollapsed) {
+    settingsContent.style.display = 'none';
+    settingsHeader.classList.add('collapsed');
+  } else {
+    settingsContent.style.display = 'block';
+    settingsHeader.classList.remove('collapsed');
+  }
 }
 
 /**
@@ -113,6 +159,13 @@ async function handleSaveApiKey() {
     
     // Clear input for security
     apiKeyInput.value = '••••••••';
+    
+    // Auto-collapse settings after saving
+    if (!settingsCollapsed) {
+      settingsCollapsed = true;
+      updateSettingsVisibility();
+      saveCollapsedState();
+    }
   } catch (error) {
     showError(`Failed to save API key: ${error.message}`);
   } finally {
