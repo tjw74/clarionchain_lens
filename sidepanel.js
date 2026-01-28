@@ -23,7 +23,7 @@ const settingsHeader = document.getElementById('settings-header');
 
 let currentProvider = 'openai';
 let currentAnalysis = '';
-let settingsCollapsed = false;
+let settingsCollapsed = true; // Collapsed by default
 
 /**
  * Initialize side panel
@@ -55,7 +55,8 @@ async function init() {
  */
 async function loadCollapsedState() {
   const result = await chrome.storage.local.get(['settingsCollapsed']);
-  settingsCollapsed = result.settingsCollapsed || false;
+  // Default to collapsed (true) if not set
+  settingsCollapsed = result.settingsCollapsed !== undefined ? result.settingsCollapsed : true;
   updateSettingsVisibility();
 }
 
