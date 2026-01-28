@@ -15,32 +15,35 @@ body {
   color: #ffffff;
   line-height: 1.6;
   font-size: 14px;
-  min-width: 450px;
-  max-width: 600px;
   width: 100%;
   min-height: 600px;
   overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 .container {
-  padding: 16px;
+  padding: 10px;
   width: 100%;
   box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 header {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #333333;
 }
 
 header h1 {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
   color: #00ff00;
   margin-bottom: 4px;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  line-height: 1.2;
 }
 
 .subtitle {
@@ -49,13 +52,13 @@ header h1 {
 }
 
 .section {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .section h2 {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: #ffffff;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -91,6 +94,8 @@ header h1 {
   font-size: 13px;
   font-family: inherit;
   transition: border-color 0.2s;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .form-group input[type="text"]:focus,
@@ -117,19 +122,23 @@ header h1 {
 
 .api-key-container {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   box-sizing: border-box;
 }
 
 .api-key-container input {
   flex: 1;
-  min-width: 0; /* Allows input to shrink */
+  min-width: 0;
+  max-width: calc(100% - 70px); /* Reserve space for button */
 }
 
 .api-key-container .btn {
-  flex-shrink: 0; /* Prevents button from shrinking */
+  flex-shrink: 0;
   white-space: nowrap;
+  padding: 10px 10px;
+  font-size: 12px;
+  min-width: 60px;
 }
 
 .status-message {
@@ -152,7 +161,7 @@ header h1 {
 }
 
 .btn {
-  padding: 10px 16px;
+  padding: 10px 12px;
   border: none;
   border-radius: 4px;
   font-size: 13px;
@@ -161,8 +170,8 @@ header h1 {
   transition: all 0.2s;
   font-family: inherit;
   white-space: nowrap;
-  overflow: visible;
   box-sizing: border-box;
+  max-width: 100%;
 }
 
 .btn:disabled {
@@ -196,8 +205,11 @@ header h1 {
 
 .btn-large {
   width: 100%;
-  padding: 12px;
-  font-size: 14px;
+  padding: 12px 10px;
+  font-size: 13px;
+  box-sizing: border-box;
+  white-space: normal;
+  word-wrap: break-word;
 }
 
 .loading {
@@ -245,31 +257,39 @@ header h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px;
   border-bottom: 1px solid #333333;
-  gap: 12px;
+  gap: 6px;
+  box-sizing: border-box;
 }
 
 .analysis-header h3 {
   flex: 1;
-  min-width: 0; /* Allows text to wrap if needed */
+  min-width: 0;
+  font-size: 12px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .analysis-header .btn {
-  flex-shrink: 0; /* Prevents button from shrinking */
+  flex-shrink: 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  min-width: 50px;
 }
 
 .analysis-content {
-  padding: 16px;
+  padding: 10px;
   max-height: 400px;
   overflow-y: auto;
   overflow-x: hidden;
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: 12px;
+  line-height: 1.5;
   color: #e0e0e0;
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
+  box-sizing: border-box;
 }
 
 .analysis-content p {
@@ -289,15 +309,18 @@ header h1 {
 }
 
 footer {
-  margin-top: 24px;
-  padding-top: 16px;
+  margin-top: 20px;
+  padding-top: 12px;
   border-top: 1px solid #333333;
 }
 
 .footer-text {
-  font-size: 11px;
+  font-size: 10px;
   color: #888888;
   text-align: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding: 0 4px;
 }
 
 .footer-text strong {
