@@ -16,10 +16,12 @@ body {
   line-height: 1.6;
   font-size: 14px;
   width: 100%;
-  min-height: 600px;
+  height: 100vh;
   overflow-x: hidden;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .container {
@@ -28,12 +30,17 @@ body {
   box-sizing: border-box;
   max-width: 100%;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 header {
   margin-bottom: 20px;
   padding-bottom: 12px;
   border-bottom: 1px solid #333333;
+  flex-shrink: 0;
 }
 
 .header-top {
@@ -83,6 +90,17 @@ header h1 {
 
 .section {
   margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.section:last-child {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .section h2 {
@@ -308,6 +326,7 @@ header h1 {
   box-sizing: border-box;
   white-space: normal;
   word-wrap: break-word;
+  flex-shrink: 0;
 }
 
 .btn-small {
@@ -319,6 +338,7 @@ header h1 {
   text-align: center;
   padding: 24px;
   color: #888888;
+  flex-shrink: 0;
 }
 
 .spinner {
@@ -347,6 +367,7 @@ header h1 {
   margin-bottom: 16px;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  flex-shrink: 0;
 }
 
 /* Chat Container */
@@ -357,9 +378,9 @@ header h1 {
   background: #1a1a1a;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 300px);
-  min-height: 400px;
-  max-height: 600px;
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
 }
 
 .chat-header {
@@ -506,9 +527,10 @@ header h1 {
 }
 
 footer {
-  margin-top: 20px;
+  margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid #333333;
+  flex-shrink: 0;
 }
 
 .footer-text {
