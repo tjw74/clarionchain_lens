@@ -17,12 +17,12 @@ const errorMessage = document.getElementById('error-message');
 const analysisResult = document.getElementById('analysis-result');
 const analysisContent = document.getElementById('analysis-content');
 const copyBtn = document.getElementById('copy-btn');
-const settingsContent = document.getElementById('settings-content');
-const settingsHeader = document.getElementById('settings-header');
+const settingsGear = document.getElementById('settings-gear');
+const settingsModal = document.getElementById('settings-modal');
+const closeSettingsBtn = document.getElementById('close-settings');
 
 let currentProvider = 'openai';
 let currentAnalysis = '';
-let settingsCollapsed = true; // Collapsed by default
 
 /**
  * Initialize side panel
@@ -30,9 +30,6 @@ let settingsCollapsed = true; // Collapsed by default
 async function init() {
   // Load saved API key for current provider
   await loadApiKeyStatus();
-
-  // Load collapsed state
-  await loadCollapsedState();
 
   // Event listeners
   providerSelect.addEventListener('change', async (e) => {
@@ -43,49 +40,39 @@ async function init() {
   saveKeyBtn.addEventListener('click', handleSaveApiKey);
   analyzeBtn.addEventListener('click', handleAnalyze);
   copyBtn.addEventListener('click', handleCopy);
-  settingsHeader.addEventListener('click', toggleSettings);
+  settingsGear.addEventListener('click', openSettings);
+  closeSettingsBtn.addEventListener('click', closeSettings);
+  
+  // Close modal when clicking outside
+  settingsModal.addEventListener('click', (e) => {
+    if (e.target === settingsModal) {
+      closeSettings();
+    }
+  });
+  
+  // Close modal on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && settingsModal.style.display !== 'none') {
+      closeSettings();
+    }
+  });
 
   // Check if we're on bitview.space
   checkCurrentTab();
 }
 
 /**
- * Load collapsed state from storage
+ * Open settings modal
  */
-async function loadCollapsedState() {
-  const result = await chrome.storage.local.get(['settingsCollapsed']);
-  // Default to collapsed (true) if not set
-  settingsCollapsed = result.settingsCollapsed !== undefined ? result.settingsCollapsed : true;
-  updateSettingsVisibility();
+function openSettings() {
+  settingsModal.style.display = 'flex';
 }
 
 /**
- * Save collapsed state to storage
+ * Close settings modal
  */
-async function saveCollapsedState() {
-  await chrome.storage.local.set({ settingsCollapsed });
-}
-
-/**
- * Toggle settings section
- */
-function toggleSettings() {
-  settingsCollapsed = !settingsCollapsed;
-  updateSettingsVisibility();
-  saveCollapsedState();
-}
-
-/**
- * Update settings visibility based on collapsed state
- */
-function updateSettingsVisibility() {
-  if (settingsCollapsed) {
-    settingsContent.style.display = 'none';
-    settingsHeader.classList.add('collapsed');
-  } else {
-    settingsContent.style.display = 'block';
-    settingsHeader.classList.remove('collapsed');
-  }
+function closeSettings() {
+  settingsModal.style.display = 'none';
 }
 
 /**
@@ -160,12 +147,10 @@ async function handleSaveApiKey() {
     // Clear input for security
     apiKeyInput.value = '••••••••';
     
-    // Auto-collapse settings after saving
-    if (!settingsCollapsed) {
-      settingsCollapsed = true;
-      updateSettingsVisibility();
-      saveCollapsedState();
-    }
+    // Auto-close settings modal after saving
+    setTimeout(() => {
+      closeSettings();
+    }, 500); // Small delay to show success message
   } catch (error) {
     showError(`Failed to save API key: ${error.message}`);
   } finally {
