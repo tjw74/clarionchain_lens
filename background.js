@@ -199,7 +199,7 @@ async function handleAnalyzeChart({ imageDataUrl, metadata, provider, conversati
   // Track cost if usage data is available
   if (usage && usage.inputTokens && usage.outputTokens) {
     const model = provider === 'openai' ? 'gpt-4o' : 
-                  provider === 'anthropic' ? 'claude-3-haiku-20240307' :
+                  provider === 'anthropic' ? 'claude-3-5-sonnet-20241022' :
                   provider === 'google' ? 'gemini-1.5-pro' : 'gpt-4o';
     
     const cost = calculateCost(provider, model, usage.inputTokens, usage.outputTokens);

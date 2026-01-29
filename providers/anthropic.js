@@ -4,8 +4,7 @@
  */
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-// Try claude-3-haiku first (cheaper, works with user's key), fallback to sonnet
-const DEFAULT_MODEL = 'claude-3-haiku-20240307'; // Vision-capable model, confirmed working
+const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022'; // Vision-capable model
 
 /**
  * Create analysis prompt for Bitcoin chart
@@ -59,21 +58,38 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
     // Add all conversation history except the last user message (we'll add it with image)
     const historyWithoutLast = conversationHistory.slice(0, -1);
     historyWithoutLast.forEach(msg => {
-      messages.push({
-        role: msg.role,
-        content: typeof msg.content === 'string' ? msg.content : msg.content
-      });
+      // Anthropic expects content as string for assistant, or array for user
+      if (msg.role === 'assistant') {
+        messages.push({
+          role: 'assistant',
+          content: typeof msg.content === 'string' ? msg.content : msg.content
+        });
+      } else if (msg.role === 'user') {
+        // For user messages in history, content should be string (no images in history)
+        messages.push({
+          role: 'user',
+          content: typeof msg.content === 'string' ? msg.content : 
+                   Array.isArray(msg.content) ? msg.content.find(c => c.type === 'text')?.text || '' : 
+                   msg.content
+        });
+      }
     });
 
     // Add the latest user question with the image
     const lastUserMessage = conversationHistory[conversationHistory.length - 1];
     if (lastUserMessage && lastUserMessage.role === 'user') {
+      const userText = typeof lastUserMessage.content === 'string' 
+        ? lastUserMessage.content 
+        : Array.isArray(lastUserMessage.content) 
+          ? lastUserMessage.content.find(c => c.type === 'text')?.text || ''
+          : '';
+      
       messages.push({
         role: 'user',
         content: [
           {
             type: 'text',
-            text: lastUserMessage.content
+            text: userText
           },
           {
             type: 'image',
@@ -112,6 +128,16 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
     max_tokens: 1500,
     messages: messages
   };
+
+  // Log request for debugging
+  console.log('Anthropic API request:', {
+    model: requestBody.model,
+    messageCount: requestBody.messages.length,
+    firstMessageRole: requestBody.messages[0]?.role,
+    firstMessageContentTypes: Array.isArray(requestBody.messages[0]?.content) 
+      ? requestBody.messages[0].content.map(c => c.type)
+      : 'string'
+  });
 
   try {
     const response = await fetch(ANTHROPIC_API_URL, {
