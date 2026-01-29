@@ -128,15 +128,26 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
       let errorMessage = `Anthropic API error: ${response.status} ${response.statusText}`;
       try {
         const errorData = await response.json();
+        console.error('Anthropic API error details (full):', JSON.stringify(errorData, null, 2));
+        
         // Anthropic error format: { error: { type, message } }
         if (errorData.error) {
-          errorMessage = errorData.error.message || errorData.error.type || errorMessage;
+          const errorObj = errorData.error;
+          // Try multiple possible error message fields
+          errorMessage = errorObj.message || errorObj.type || JSON.stringify(errorObj) || errorMessage;
         } else if (errorData.message) {
           errorMessage = errorData.message;
+        } else {
+          // If no standard error format, show the whole response
+          errorMessage = JSON.stringify(errorData);
         }
-        console.error('Anthropic API error details:', errorData);
+        
+        console.error('Anthropic API parsed error message:', errorMessage);
       } catch (parseError) {
-        console.error('Could not parse Anthropic error response');
+        console.error('Could not parse Anthropic error response:', parseError);
+        const text = await response.text().catch(() => '');
+        console.error('Anthropic API raw error response:', text);
+        errorMessage = `Anthropic API error ${response.status}: ${text || response.statusText}`;
       }
       throw new Error(errorMessage);
     }
