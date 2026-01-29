@@ -287,6 +287,46 @@ header {
   margin-top: 8px;
 }
 
+.provider-costs-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #333333;
+}
+
+.provider-costs-display {
+  margin-top: 8px;
+  padding: 10px;
+  background: #0a0a0a;
+  border: 1px solid #333333;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.provider-costs-display .cost-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.provider-costs-display .cost-item:last-child {
+  margin-bottom: 0;
+}
+
+.provider-costs-display .cost-label {
+  color: #cccccc;
+}
+
+.provider-costs-display .cost-value {
+  color: #00ff00;
+  font-weight: 500;
+}
+
+.cost-loading {
+  text-align: center;
+  color: #888888;
+  font-size: 11px;
+}
+
 .btn-danger {
   background: #cc0000;
   color: #ffffff;

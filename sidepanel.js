@@ -27,6 +27,9 @@ const closeSettingsBtn = document.getElementById('close-settings');
 const costMetrics = document.getElementById('cost-metrics');
 const apiKeyActions = document.getElementById('api-key-actions');
 const removeKeyBtn = document.getElementById('remove-key-btn');
+const providerCostsSection = document.getElementById('provider-costs-section');
+const providerCostsContent = document.getElementById('provider-costs-content');
+const providerCostsLoading = document.querySelector('.cost-loading');
 
 let currentProvider = 'openai';
 let conversationHistory = [];
@@ -44,6 +47,7 @@ async function init() {
   providerSelect.addEventListener('change', async (e) => {
     currentProvider = e.target.value;
     await loadApiKeyStatus();
+    await updateProviderCosts();
   });
 
   saveKeyBtn.addEventListener('click', handleSaveApiKey);
@@ -85,8 +89,9 @@ async function init() {
 /**
  * Open settings modal
  */
-function openSettings() {
+async function openSettings() {
   settingsModal.style.display = 'flex';
+  await updateProviderCosts();
 }
 
 /**
@@ -168,6 +173,63 @@ async function loadApiKeyStatus() {
 }
 
 /**
+ * Update provider-specific costs display in settings
+ */
+async function updateProviderCosts() {
+  const hasKey = await hasApiKey(currentProvider);
+  
+  if (!hasKey) {
+    providerCostsSection.style.display = 'none';
+    return;
+  }
+  
+  providerCostsSection.style.display = 'block';
+  providerCostsLoading.style.display = 'block';
+  providerCostsContent.innerHTML = '';
+  
+  try {
+    const apiKey = await getApiKey(currentProvider);
+    
+    // Fetch costs from background script (which can access APIs)
+    const response = await chrome.runtime.sendMessage({
+      action: 'getProviderCosts',
+      provider: currentProvider,
+      apiKey: apiKey
+    });
+    
+    providerCostsLoading.style.display = 'none';
+    
+    if (response.success && response.costs) {
+      const costs = response.costs;
+      const total = formatCost(costs.thisMonthTotal);
+      const avg = formatCost(costs.thisMonthAvg);
+      const count = costs.totalCount || 0;
+      
+      providerCostsContent.innerHTML = `
+        <div class="cost-item">
+          <span class="cost-label">This Month:</span>
+          <span class="cost-value">${total}</span>
+        </div>
+        <div class="cost-item">
+          <span class="cost-label">Avg per Request:</span>
+          <span class="cost-value">${avg}</span>
+        </div>
+        <div class="cost-item">
+          <span class="cost-label">Requests:</span>
+          <span class="cost-value">${count}</span>
+        </div>
+      `;
+    } else {
+      providerCostsContent.innerHTML = '<div style="color: #888888; font-size: 11px;">Unable to fetch costs. Using calculated estimates.</div>';
+    }
+  } catch (error) {
+    console.error('Error updating provider costs:', error);
+    providerCostsLoading.style.display = 'none';
+    providerCostsContent.innerHTML = '<div style="color: #888888; font-size: 11px;">Error loading costs.</div>';
+  }
+}
+
+/**
  * Handle API key save
  */
 async function handleSaveApiKey() {
@@ -203,6 +265,7 @@ async function handleSaveApiKey() {
     
     // Update status
     await loadApiKeyStatus();
+    await updateProviderCosts();
     
     apiKeyStatus.textContent = '✓ API key saved and validated';
     apiKeyStatus.className = 'status-message status-success';

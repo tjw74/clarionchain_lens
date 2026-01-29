@@ -5,7 +5,7 @@
  */
 
 import { getApiKey, hasApiKey } from './utils/storage.js';
-import { calculateCost, recordUsage } from './utils/cost.js';
+import { calculateCost, recordUsage, getProviderCosts } from './utils/cost.js';
 import * as openaiProvider from './providers/openai.js';
 import * as anthropicProvider from './providers/anthropic.js';
 import * as googleProvider from './providers/google.js';
@@ -155,7 +155,36 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   }
+
+  if (message.action === 'getProviderCosts') {
+    handleGetProviderCosts(message.provider, message.apiKey)
+      .then(costs => sendResponse({ success: true, costs }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
 });
+
+/**
+ * Handle provider costs request
+ */
+async function handleGetProviderCosts(provider, apiKey) {
+  // If no API key provided, try to get it from storage
+  if (!apiKey) {
+    apiKey = await getApiKey(provider);
+  }
+  
+  if (!apiKey) {
+    // No key, return zero costs
+    return {
+      thisMonthTotal: 0,
+      thisMonthAvg: 0,
+      totalCount: 0
+    };
+  }
+  
+  // Fetch costs using the cost utility
+  return await getProviderCosts(provider, apiKey);
+}
 
 /**
  * Handle chart analysis request
