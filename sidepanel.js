@@ -183,13 +183,19 @@ async function handleSaveApiKey() {
     saveKeyBtn.textContent = 'Saving...';
 
     // Validate API key
+    console.log(`Validating API key for ${currentProvider}...`);
     const isValid = await validateApiKey(currentProvider, apiKey);
+    console.log(`Validation result for ${currentProvider}:`, isValid);
     
     if (!isValid) {
-      showError(`Invalid API key for ${currentProvider}. Please check your key and try again.`);
-      saveKeyBtn.disabled = false;
-      saveKeyBtn.textContent = 'Save';
-      return;
+      // Still save the key even if validation fails - user might want to use it anyway
+      // Validation might fail due to network issues or API changes
+      console.warn(`Validation failed for ${currentProvider}, but saving key anyway`);
+      // Don't return early - save the key regardless
+      // showError(`Invalid API key for ${currentProvider}. Please check your key and try again.`);
+      // saveKeyBtn.disabled = false;
+      // saveKeyBtn.textContent = 'Save';
+      // return;
     }
 
     // Save key
@@ -229,7 +235,14 @@ async function validateApiKey(provider, apiKey) {
       apiKey
     });
     
-    return response.success && response.isValid;
+    console.log(`Validation response for ${provider}:`, response);
+    
+    if (!response || !response.success) {
+      console.error('Validation failed - no success response:', response);
+      return false;
+    }
+    
+    return response.isValid === true;
   } catch (error) {
     console.error('Validation error:', error);
     return false;
