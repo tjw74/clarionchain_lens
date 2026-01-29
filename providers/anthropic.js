@@ -168,12 +168,43 @@ export async function validateApiKey(apiKey) {
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
         max_tokens: 1,
-        messages: [{ role: 'user', content: 'test' }]
+        messages: [{ role: 'user', content: 'hi' }]
       })
     });
-    // Even if it fails, a 401/403 means key is invalid, 400 might mean key is valid but request is bad
-    return response.status !== 401 && response.status !== 403;
-  } catch {
+    
+    // 401/403 = invalid key
+    if (response.status === 401 || response.status === 403) {
+      return false;
+    }
+    
+    // 200-299 = success (key is valid)
+    if (response.status >= 200 && response.status < 300) {
+      return true;
+    }
+    
+    // 400 = bad request (might be valid key but bad request format)
+    // Try to parse error to see if it's auth-related
+    if (response.status === 400) {
+      try {
+        const errorData = await response.json();
+        // If error mentions authentication/authorization, key is invalid
+        const errorMessage = JSON.stringify(errorData).toLowerCase();
+        if (errorMessage.includes('auth') || errorMessage.includes('unauthorized') || errorMessage.includes('forbidden')) {
+          return false;
+        }
+        // Otherwise, assume key is valid but request format might be off
+        return true;
+      } catch {
+        // Can't parse error, assume key might be valid
+        return true;
+      }
+    }
+    
+    // Other status codes - assume invalid
+    return false;
+  } catch (error) {
+    // Network errors or other exceptions - log and return false
+    console.error('Anthropic API key validation error:', error);
     return false;
   }
 }
