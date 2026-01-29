@@ -283,6 +283,62 @@ header {
   border: 1px solid rgba(255, 165, 0, 0.3);
 }
 
+.api-keys-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.api-key-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #1a1a1a;
+  border: 1px solid #333333;
+  border-radius: 4px;
+  gap: 8px;
+}
+
+.api-key-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.api-key-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #cccccc;
+  margin-bottom: 2px;
+}
+
+.api-key-item-status {
+  font-size: 11px;
+  color: #888888;
+}
+
+.api-key-item-status.has-key {
+  color: #00ff00;
+}
+
+.api-key-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-danger {
+  background: #cc0000;
+  color: #ffffff;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #aa0000;
+}
+
 .btn {
   padding: 10px 12px;
   border: none;
