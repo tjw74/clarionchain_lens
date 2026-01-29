@@ -317,7 +317,7 @@ function injectActiveIndicator() {
     border: 1px solid #00ff00;
     pointer-events: none;
   `;
-  indicator.textContent = 'ClarionChain Lens Active';
+  indicator.textContent = 'Clarion|Lens Active';
   document.body.appendChild(indicator);
 
   setTimeout(() => {

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "ClarionChain Lens",
+  "name": "Clarion|Lens",
   "version": "1.0.0",
   "description": "AI-powered Bitcoin on-chain chart analysis for bitview.space",
   "permissions": [
@@ -30,7 +30,7 @@
     "default_path": "sidepanel.html"
   },
   "action": {
-    "default_title": "ClarionChain Lens",
+    "default_title": "Clarion|Lens",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
