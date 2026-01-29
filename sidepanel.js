@@ -4,6 +4,7 @@
  */
 
 import { saveApiKey, getApiKey, hasApiKey } from './utils/storage.js';
+import { getUsageStats, formatCost } from './utils/cost.js';
 
 // UI Elements
 const providerSelect = document.getElementById('provider-select');
@@ -23,6 +24,7 @@ const copyConversationBtn = document.getElementById('copy-conversation-btn');
 const settingsGear = document.getElementById('settings-gear');
 const settingsModal = document.getElementById('settings-modal');
 const closeSettingsBtn = document.getElementById('close-settings');
+const costMetrics = document.getElementById('cost-metrics');
 
 let currentProvider = 'openai';
 let conversationHistory = [];
@@ -72,6 +74,9 @@ async function init() {
 
   // Check if we're on bitview.space
   checkCurrentTab();
+  
+  // Load and display cost metrics
+  await updateCostMetrics();
 }
 
 /**
@@ -267,6 +272,9 @@ async function handleAnalyze() {
     const analysis = analysisResponse.data.analysis;
     addMessage('assistant', analysis);
     conversationHistory.push({ role: 'assistant', content: analysis });
+    
+    // Update cost metrics after analysis
+    await updateCostMetrics();
 
     // Show chat interface
     chatContainer.style.display = 'flex';
@@ -382,6 +390,9 @@ async function handleSendMessage() {
     const assistantResponse = response.data.analysis;
     addMessage('assistant', assistantResponse);
     conversationHistory.push({ role: 'assistant', content: assistantResponse });
+    
+    // Update cost metrics after analysis
+    await updateCostMetrics();
 
   } catch (error) {
     // Remove loading indicator
@@ -393,6 +404,26 @@ async function handleSendMessage() {
     chatInput.disabled = false;
     sendBtn.disabled = false;
     chatInput.focus();
+  }
+}
+
+/**
+ * Update cost metrics display
+ */
+async function updateCostMetrics() {
+  try {
+    const stats = await getUsageStats();
+    const thisMonth = formatCost(stats.thisMonthTotal);
+    const avg = formatCost(stats.thisMonthAvg);
+    
+    if (stats.totalCount === 0) {
+      costMetrics.textContent = '';
+    } else {
+      costMetrics.textContent = `This Month: ${thisMonth} | Avg: ${avg}`;
+    }
+  } catch (error) {
+    console.error('Error updating cost metrics:', error);
+    costMetrics.textContent = '';
   }
 }
 

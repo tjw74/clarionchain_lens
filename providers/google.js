@@ -93,12 +93,22 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No analysis returned';
     
+    // Extract usage information
+    const usage = data.usageMetadata || {};
+    
     // Call onChunk with full text if provided (Gemini doesn't support streaming in this format)
     if (onChunk) {
       onChunk(text);
     }
     
-    return text;
+    return {
+      content: text,
+      usage: {
+        inputTokens: usage.promptTokenCount || 0,
+        outputTokens: usage.candidatesTokenCount || 0,
+        totalTokens: usage.totalTokenCount || 0
+      }
+    };
   } catch (error) {
     if (error.message.includes('API')) {
       throw error;

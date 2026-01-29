@@ -154,6 +154,7 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
       let buffer = '';
       let fullText = '';
 
+      let usageData = null;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -171,6 +172,11 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
                 fullText += content;
                 onChunk(content);
               }
+              
+              // Capture usage data if present (usually in final chunk)
+              if (data.usage) {
+                usageData = data.usage;
+              }
             } catch (e) {
               // Skip invalid JSON
             }
@@ -178,11 +184,30 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
         }
       }
 
-      return fullText;
+      // Return content with usage info
+      return {
+        content: fullText,
+        usage: usageData ? {
+          inputTokens: usageData.prompt_tokens || 0,
+          outputTokens: usageData.completion_tokens || 0,
+          totalTokens: usageData.total_tokens || 0
+        } : null
+      };
     } else {
       // Handle non-streaming response
       const data = await response.json();
-      return data.choices?.[0]?.message?.content || 'No analysis returned';
+      const content = data.choices?.[0]?.message?.content || 'No analysis returned';
+      
+      // Extract usage information for cost tracking
+      const usage = data.usage || {};
+      return {
+        content,
+        usage: {
+          inputTokens: usage.prompt_tokens || 0,
+          outputTokens: usage.completion_tokens || 0,
+          totalTokens: usage.total_tokens || 0
+        }
+      };
     }
   } catch (error) {
     if (error.message.includes('API')) {

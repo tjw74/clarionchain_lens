@@ -5,6 +5,7 @@
  */
 
 import { getApiKey, hasApiKey } from './utils/storage.js';
+import { calculateCost, recordUsage } from './utils/cost.js';
 import * as openaiProvider from './providers/openai.js';
 import * as anthropicProvider from './providers/anthropic.js';
 import * as googleProvider from './providers/google.js';
@@ -178,7 +179,32 @@ async function handleAnalyzeChart({ imageDataUrl, metadata, provider, conversati
   const providerModule = getProvider(provider);
 
   // Analyze chart with conversation history
-  const analysis = await providerModule.analyzeChart(imageDataUrl, metadata, apiKey, null, conversationHistory);
+  const result = await providerModule.analyzeChart(imageDataUrl, metadata, apiKey, null, conversationHistory);
+  
+  // Extract analysis content and usage
+  let analysis;
+  let usage = null;
+  
+  if (typeof result === 'string') {
+    // Legacy format - just string content
+    analysis = result;
+  } else if (result && typeof result === 'object') {
+    // New format - object with content and usage
+    analysis = result.content || result;
+    usage = result.usage || null;
+  } else {
+    analysis = result;
+  }
+  
+  // Track cost if usage data is available
+  if (usage && usage.inputTokens && usage.outputTokens) {
+    const model = provider === 'openai' ? 'gpt-4o' : 
+                  provider === 'anthropic' ? 'claude-3-5-sonnet-20241022' :
+                  provider === 'google' ? 'gemini-1.5-pro' : 'gpt-4o';
+    
+    const cost = calculateCost(provider, model, usage.inputTokens, usage.outputTokens);
+    await recordUsage(provider, model, usage.inputTokens, usage.outputTokens, cost);
+  }
   
   return { analysis };
 }

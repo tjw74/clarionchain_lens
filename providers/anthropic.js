@@ -123,10 +123,25 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
         }
       }
 
-      return fullText;
+      // For streaming, we don't get usage in the stream, so return content only
+      return {
+        content: fullText,
+        usage: null // Anthropic streaming doesn't include usage in stream
+      };
     } else {
       const data = await response.json();
-      return data.content?.[0]?.text || 'No analysis returned';
+      const content = data.content?.[0]?.text || 'No analysis returned';
+      
+      // Extract usage information
+      const usage = data.usage || {};
+      return {
+        content,
+        usage: {
+          inputTokens: usage.input_tokens || 0,
+          outputTokens: usage.output_tokens || 0,
+          totalTokens: (usage.input_tokens || 0) + (usage.output_tokens || 0)
+        }
+      };
     }
   } catch (error) {
     if (error.message.includes('API')) {
