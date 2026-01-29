@@ -42,14 +42,7 @@
           </div>
 
           <div class="form-group">
-            <label>API Keys</label>
-            <div id="api-keys-list" class="api-keys-list">
-              <!-- Provider keys will be dynamically added here -->
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="api-key-input">Add/Update API Key</label>
+            <label for="api-key-input">API Key</label>
             <div class="api-key-container">
               <input 
                 type="password" 
@@ -60,6 +53,9 @@
               <button id="save-key-btn" class="btn btn-primary">Save</button>
             </div>
             <div id="api-key-status" class="status-message"></div>
+            <div id="api-key-actions" class="api-key-actions" style="display: none;">
+              <button id="remove-key-btn" class="btn btn-danger btn-small">Remove Key</button>
+            </div>
           </div>
 
           <div class="form-group">

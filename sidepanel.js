@@ -25,7 +25,8 @@ const settingsGear = document.getElementById('settings-gear');
 const settingsModal = document.getElementById('settings-modal');
 const closeSettingsBtn = document.getElementById('close-settings');
 const costMetrics = document.getElementById('cost-metrics');
-const apiKeysList = document.getElementById('api-keys-list');
+const apiKeyActions = document.getElementById('api-key-actions');
+const removeKeyBtn = document.getElementById('remove-key-btn');
 
 let currentProvider = 'openai';
 let conversationHistory = [];
@@ -38,9 +39,6 @@ let currentChartMetadata = null;
 async function init() {
   // Load saved API key for current provider
   await loadApiKeyStatus();
-  
-  // Load and display all API keys
-  await loadAllApiKeys();
 
   // Event listeners
   providerSelect.addEventListener('change', async (e) => {
@@ -49,6 +47,7 @@ async function init() {
   });
 
   saveKeyBtn.addEventListener('click', handleSaveApiKey);
+  removeKeyBtn.addEventListener('click', handleRemoveCurrentApiKey);
   analyzeBtn.addEventListener('click', handleAnalyze);
   sendBtn.addEventListener('click', handleSendMessage);
   chatInput.addEventListener('keypress', (e) => {
@@ -124,68 +123,16 @@ const providerNames = {
 };
 
 /**
- * Load and display all API keys
+ * Handle removing current provider's API key
  */
-async function loadAllApiKeys() {
-  apiKeysList.innerHTML = '';
-  
-  const providers = ['openai', 'anthropic', 'google'];
-  
-  for (const provider of providers) {
-    const hasKey = await hasApiKey(provider);
-    const item = document.createElement('div');
-    item.className = 'api-key-item';
-    item.dataset.provider = provider;
-    
-    const info = document.createElement('div');
-    info.className = 'api-key-item-info';
-    
-    const name = document.createElement('div');
-    name.className = 'api-key-item-name';
-    name.textContent = providerNames[provider];
-    
-    const status = document.createElement('div');
-    status.className = `api-key-item-status ${hasKey ? 'has-key' : ''}`;
-    status.textContent = hasKey ? '✓ Key configured' : 'No key';
-    
-    info.appendChild(name);
-    info.appendChild(status);
-    
-    const actions = document.createElement('div');
-    actions.className = 'api-key-item-actions';
-    
-    if (hasKey) {
-      const removeBtn = document.createElement('button');
-      removeBtn.className = 'btn btn-danger btn-small';
-      removeBtn.textContent = 'Remove';
-      removeBtn.onclick = () => handleRemoveApiKey(provider);
-      actions.appendChild(removeBtn);
-    }
-    
-    item.appendChild(info);
-    item.appendChild(actions);
-    apiKeysList.appendChild(item);
-  }
-}
-
-/**
- * Handle removing an API key
- */
-async function handleRemoveApiKey(provider) {
-  if (!confirm(`Remove API key for ${providerNames[provider]}?`)) {
+async function handleRemoveCurrentApiKey() {
+  if (!confirm(`Remove API key for ${providerNames[currentProvider]}?`)) {
     return;
   }
   
   try {
-    await removeApiKey(provider);
-    
-    // Reload the API keys list
-    await loadAllApiKeys();
-    
-    // If we removed the current provider's key, update status
-    if (provider === currentProvider) {
-      await loadApiKeyStatus();
-    }
+    await removeApiKey(currentProvider);
+    await loadApiKeyStatus();
     
     // Update analyze button state
     const hasKey = await hasApiKey(currentProvider);
@@ -208,12 +155,14 @@ async function loadApiKeyStatus() {
     apiKeyInput.placeholder = 'Key saved - enter new key to update';
     apiKeyStatus.textContent = '✓ API key saved';
     apiKeyStatus.className = 'status-message status-success';
+    apiKeyActions.style.display = 'block';
     analyzeBtn.disabled = false;
   } else {
     apiKeyInput.value = '';
     apiKeyInput.placeholder = 'Enter your API key';
     apiKeyStatus.textContent = 'No API key configured';
     apiKeyStatus.className = 'status-message status-warning';
+    apiKeyActions.style.display = 'none';
     analyzeBtn.disabled = true;
   }
 }
@@ -246,8 +195,8 @@ async function handleSaveApiKey() {
     // Save key
     await saveApiKey(currentProvider, apiKey);
     
-    // Reload all API keys to show updated status
-    await loadAllApiKeys();
+    // Update status
+    await loadApiKeyStatus();
     
     apiKeyStatus.textContent = '✓ API key saved and validated';
     apiKeyStatus.className = 'status-message status-success';
