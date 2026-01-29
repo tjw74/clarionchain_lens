@@ -16,6 +16,10 @@ const PRICING = {
     }
   },
   anthropic: {
+    'claude-3-haiku-20240307': {
+      input: 0.25,
+      output: 1.25
+    },
     'claude-3-5-sonnet-20241022': {
       input: 3.00,
       output: 15.00

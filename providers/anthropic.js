@@ -4,7 +4,8 @@
  */
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022'; // Vision-capable model
+// Try claude-3-haiku first (cheaper, works with user's key), fallback to sonnet
+const DEFAULT_MODEL = 'claude-3-haiku-20240307'; // Vision-capable model, confirmed working
 
 /**
  * Create analysis prompt for Bitcoin chart
@@ -134,12 +135,21 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
         if (errorData.error) {
           const errorObj = errorData.error;
           // Try multiple possible error message fields
-          errorMessage = errorObj.message || errorObj.type || JSON.stringify(errorObj) || errorMessage;
+          if (errorObj.message) {
+            errorMessage = errorObj.message;
+          } else if (errorObj.type) {
+            errorMessage = `${errorObj.type}: ${JSON.stringify(errorObj)}`;
+          } else {
+            errorMessage = JSON.stringify(errorObj);
+          }
         } else if (errorData.message) {
           errorMessage = errorData.message;
+        } else if (errorData.model) {
+          // Sometimes errors include the model name
+          errorMessage = `Model error: ${errorData.model}. Full error: ${JSON.stringify(errorData)}`;
         } else {
           // If no standard error format, show the whole response
-          errorMessage = JSON.stringify(errorData);
+          errorMessage = `Anthropic API error: ${JSON.stringify(errorData)}`;
         }
         
         console.error('Anthropic API parsed error message:', errorMessage);
