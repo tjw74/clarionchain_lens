@@ -80,7 +80,8 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify(requestBody)
     });
@@ -164,7 +165,8 @@ export async function validateApiKey(apiKey) {
       headers: {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
-        'content-type': 'application/json'
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
