@@ -5,6 +5,7 @@
 
 import { saveApiKey, getApiKey, hasApiKey, removeApiKey } from './utils/storage.js';
 import { getUsageStats, formatCost } from './utils/cost.js';
+import { saveConversation, updateConversation, getMostRecentConversation } from './utils/conversations.js';
 
 // UI Elements
 const providerSelect = document.getElementById('provider-select');
@@ -19,7 +20,6 @@ const chatContainer = document.getElementById('chat-container');
 const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const sendBtn = document.getElementById('send-btn');
-const newAnalysisBtn = document.getElementById('new-analysis-btn');
 const copyConversationBtn = document.getElementById('copy-conversation-btn');
 const settingsGear = document.getElementById('settings-gear');
 const settingsModal = document.getElementById('settings-modal');
@@ -35,6 +35,7 @@ let currentProvider = 'openai';
 let conversationHistory = [];
 let currentChartImage = null;
 let currentChartMetadata = null;
+let currentConversationId = null;
 
 /**
  * Initialize side panel
@@ -45,9 +46,17 @@ async function init() {
 
   // Event listeners
   providerSelect.addEventListener('change', async (e) => {
+    // Save current conversation before switching
+    await saveCurrentConversation();
+    
     currentProvider = e.target.value;
     await loadApiKeyStatus();
     await updateProviderCosts();
+    
+    // Start fresh conversation for new provider (but keep UI visible)
+    conversationHistory = [];
+    currentConversationId = null;
+    // Don't clear the UI - user can continue or start new analysis
   });
 
   saveKeyBtn.addEventListener('click', handleSaveApiKey);
@@ -60,7 +69,6 @@ async function init() {
       handleSendMessage();
     }
   });
-  newAnalysisBtn.addEventListener('click', clearConversation);
   copyConversationBtn.addEventListener('click', handleCopyConversation);
   settingsGear.addEventListener('click', openSettings);
   closeSettingsBtn.addEventListener('click', closeSettings);
@@ -84,6 +92,9 @@ async function init() {
   
   // Load and display cost metrics
   await updateCostMetrics();
+  
+  // Try to load most recent conversation
+  await loadMostRecentConversation();
 }
 
 /**
@@ -316,13 +327,24 @@ async function validateApiKey(provider, apiKey) {
  * Handle analyze button click
  */
 async function handleAnalyze() {
-  // Reset UI
+  // Reset UI for new analysis
   hideError();
-  clearConversation();
-  loadingIndicator.style.display = 'block';
-  analyzeBtn.disabled = true;
+  
+  // Clear current UI state (but don't delete stored conversations)
+  chatMessages.innerHTML = '';
+  currentConversationId = null;
+  conversationHistory = [];
+  currentChartImage = null;
+  currentChartMetadata = null;
+  
+  // Hide chat container initially, will show after analysis
+  chatContainer.style.display = 'none';
+  chatInput.value = '';
   chatInput.disabled = true;
   sendBtn.disabled = true;
+  
+  loadingIndicator.style.display = 'block';
+  analyzeBtn.disabled = true;
 
   try {
     // Get current tab
@@ -369,6 +391,10 @@ async function handleAnalyze() {
     // Store chart data for follow-ups
     currentChartImage = imageDataUrl;
     currentChartMetadata = metadata;
+    
+    // Start a new conversation (reset ID for new analysis)
+    currentConversationId = null;
+    conversationHistory = [];
 
     // Send to background script for analysis (no conversation history for initial)
     const analysisResponse = await chrome.runtime.sendMessage({
@@ -388,7 +414,10 @@ async function handleAnalyze() {
     // Display result as first message
     const analysis = analysisResponse.data.analysis;
     addMessage('assistant', analysis);
-    conversationHistory.push({ role: 'assistant', content: analysis });
+    conversationHistory = [{ role: 'assistant', content: analysis }]; // Start fresh conversation
+    
+    // Save conversation (will create new one since currentConversationId is null)
+    await saveCurrentConversation();
     
     // Update cost metrics after analysis
     await updateCostMetrics();
@@ -448,17 +477,65 @@ function formatMessage(text) {
 }
 
 /**
- * Clear conversation and reset UI
+ * Load the most recent conversation from storage
  */
-function clearConversation() {
-  conversationHistory = [];
-  currentChartImage = null;
-  currentChartMetadata = null;
-  chatMessages.innerHTML = '';
-  chatContainer.style.display = 'none';
-  chatInput.value = '';
-  chatInput.disabled = true;
-  sendBtn.disabled = true;
+async function loadMostRecentConversation() {
+  try {
+    const recent = await getMostRecentConversation();
+    if (recent && recent.messages && recent.messages.length > 0) {
+      // Restore conversation state
+      currentConversationId = recent.id;
+      conversationHistory = [...recent.messages];
+      currentChartImage = recent.chartImage;
+      currentChartMetadata = recent.metadata;
+      currentProvider = recent.provider;
+      
+      // Update provider select to match
+      providerSelect.value = currentProvider;
+      await loadApiKeyStatus();
+      
+      // Restore UI
+      chatMessages.innerHTML = '';
+      conversationHistory.forEach(msg => {
+        addMessage(msg.role, msg.content);
+      });
+      
+      // Show chat interface if there are messages
+      if (conversationHistory.length > 0) {
+        chatContainer.style.display = 'flex';
+        chatInput.disabled = false;
+        sendBtn.disabled = false;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading conversation:', error);
+  }
+}
+
+/**
+ * Save current conversation to storage
+ */
+async function saveCurrentConversation() {
+  if (conversationHistory.length === 0 || !currentChartImage) {
+    return;
+  }
+  
+  try {
+    if (currentConversationId) {
+      // Update existing conversation
+      await updateConversation(currentConversationId, conversationHistory);
+    } else {
+      // Create new conversation
+      currentConversationId = await saveConversation(
+        currentProvider,
+        conversationHistory,
+        currentChartImage,
+        currentChartMetadata || {}
+      );
+    }
+  } catch (error) {
+    console.error('Error saving conversation:', error);
+  }
 }
 
 /**
@@ -507,6 +584,9 @@ async function handleSendMessage() {
     const assistantResponse = response.data.analysis;
     addMessage('assistant', assistantResponse);
     conversationHistory.push({ role: 'assistant', content: assistantResponse });
+    
+    // Save conversation
+    await saveCurrentConversation();
     
     // Update cost metrics after analysis
     await updateCostMetrics();
