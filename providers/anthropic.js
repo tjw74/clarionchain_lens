@@ -50,13 +50,30 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
 
   const prompt = createAnalysisPrompt(metadata);
 
-  const requestBody = {
-    model: DEFAULT_MODEL,
-    max_tokens: 1500,
-    messages: [
-      {
+  // Build messages array
+  const messages = [];
+
+  // If there's conversation history, this is a follow-up question
+  if (conversationHistory.length > 0) {
+    // Add all conversation history except the last user message (we'll add it with image)
+    const historyWithoutLast = conversationHistory.slice(0, -1);
+    historyWithoutLast.forEach(msg => {
+      messages.push({
+        role: msg.role,
+        content: typeof msg.content === 'string' ? msg.content : msg.content
+      });
+    });
+
+    // Add the latest user question with the image
+    const lastUserMessage = conversationHistory[conversationHistory.length - 1];
+    if (lastUserMessage && lastUserMessage.role === 'user') {
+      messages.push({
         role: 'user',
         content: [
+          {
+            type: 'text',
+            text: lastUserMessage.content
+          },
           {
             type: 'image',
             source: {
@@ -64,14 +81,35 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
               media_type: 'image/png',
               data: base64Image
             }
-          },
-          {
-            type: 'text',
-            text: prompt
           }
         ]
-      }
-    ]
+      });
+    }
+  } else {
+    // Initial analysis - include image with prompt
+    messages.push({
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: prompt
+        },
+        {
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: 'image/png',
+            data: base64Image
+          }
+        }
+      ]
+    });
+  }
+
+  const requestBody = {
+    model: DEFAULT_MODEL,
+    max_tokens: 1500,
+    messages: messages
   };
 
   try {
@@ -87,11 +125,20 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error?.message || 
-        `Anthropic API error: ${response.status} ${response.statusText}`
-      );
+      let errorMessage = `Anthropic API error: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        // Anthropic error format: { error: { type, message } }
+        if (errorData.error) {
+          errorMessage = errorData.error.message || errorData.error.type || errorMessage;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+        console.error('Anthropic API error details:', errorData);
+      } catch (parseError) {
+        console.error('Could not parse Anthropic error response');
+      }
+      throw new Error(errorMessage);
     }
 
     if (onChunk) {
@@ -145,9 +192,11 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
       };
     }
   } catch (error) {
-    if (error.message.includes('API')) {
+    // If it's already an API error with a message, throw it as-is
+    if (error.message && (error.message.includes('API') || error.message.includes('Anthropic'))) {
       throw error;
     }
+    // Otherwise wrap it
     throw new Error(`Failed to analyze chart: ${error.message}`);
   }
 }
