@@ -158,35 +158,46 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
  */
 export async function validateApiKey(apiKey) {
   try {
+    // Use exact same request format as working curl command
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
       },
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
         max_tokens: 10,
-        messages: [{ role: 'user', content: 'test' }]
+        messages: [
+          { role: 'user', content: 'Say hi' }
+        ]
       })
     });
     
-    // 401/403 = invalid key (definitely reject)
-    if (response.status === 401 || response.status === 403) {
-      console.error('Anthropic API key validation: Authentication failed', response.status);
-      return false;
-    }
+    // Check response status
+    const status = response.status;
+    console.log('Anthropic validation response status:', status);
     
     // 200-299 = success (key is valid)
-    if (response.status >= 200 && response.status < 300) {
+    if (status >= 200 && status < 300) {
+      const data = await response.json().catch(() => null);
+      console.log('Anthropic validation success:', data?.type === 'message' ? 'Valid key' : 'Response received');
       return true;
     }
     
+    // 401/403 = invalid key (definitely reject)
+    if (status === 401 || status === 403) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Anthropic API key validation: Authentication failed', status, errorData);
+      return false;
+    }
+    
     // 400 = bad request - check error details
-    if (response.status === 400) {
+    if (status === 400) {
       try {
         const errorData = await response.json();
+        console.log('Anthropic validation 400 error:', errorData);
         const errorType = errorData.error?.type || '';
         const errorMessage = JSON.stringify(errorData).toLowerCase();
         
@@ -206,18 +217,16 @@ export async function validateApiKey(apiKey) {
         }
         
         // Otherwise, assume key is valid but request might have other issues
-        // (e.g., model not available, rate limit, etc.)
         console.log('Anthropic API key validation: 400 error but not auth-related, assuming key is valid');
         return true;
       } catch (parseError) {
-        // Can't parse error - if we got a response, key format is probably OK
         console.log('Anthropic API key validation: Could not parse 400 error, assuming key might be valid');
         return true;
       }
     }
     
     // Other status codes - log and reject
-    console.error('Anthropic API key validation: Unexpected status', response.status);
+    console.error('Anthropic API key validation: Unexpected status', status);
     return false;
   } catch (error) {
     // Network errors or other exceptions - log and return false
