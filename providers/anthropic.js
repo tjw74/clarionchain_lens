@@ -4,7 +4,7 @@
  */
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022'; // Vision-capable model
+const DEFAULT_MODEL = 'claude-sonnet-4-5-20250929'; // Claude Sonnet 4.5 - latest Sonnet model
 
 /**
  * Create analysis prompt for Bitcoin chart
@@ -60,17 +60,26 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
     historyWithoutLast.forEach(msg => {
       // Anthropic expects content as string for assistant, or array for user
       if (msg.role === 'assistant') {
+        // Assistant messages should be strings (text content)
+        const content = typeof msg.content === 'string' 
+          ? msg.content 
+          : (Array.isArray(msg.content) 
+              ? msg.content.find(c => c.type === 'text')?.text || String(msg.content)
+              : String(msg.content));
         messages.push({
           role: 'assistant',
-          content: typeof msg.content === 'string' ? msg.content : msg.content
+          content: content
         });
       } else if (msg.role === 'user') {
         // For user messages in history, content should be string (no images in history)
+        const content = typeof msg.content === 'string' 
+          ? msg.content 
+          : (Array.isArray(msg.content) 
+              ? msg.content.find(c => c.type === 'text')?.text || '' 
+              : String(msg.content));
         messages.push({
           role: 'user',
-          content: typeof msg.content === 'string' ? msg.content : 
-                   Array.isArray(msg.content) ? msg.content.find(c => c.type === 'text')?.text || '' : 
-                   msg.content
+          content: content
         });
       }
     });
@@ -88,29 +97,26 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
         role: 'user',
         content: [
           {
-            type: 'text',
-            text: userText
-          },
-          {
             type: 'image',
             source: {
               type: 'base64',
               media_type: 'image/png',
               data: base64Image
             }
+          },
+          {
+            type: 'text',
+            text: userText
           }
         ]
       });
     }
   } else {
     // Initial analysis - include image with prompt
+    // Note: Documentation recommends image-then-text order for best results
     messages.push({
       role: 'user',
       content: [
-        {
-          type: 'text',
-          text: prompt
-        },
         {
           type: 'image',
           source: {
@@ -118,6 +124,10 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
             media_type: 'image/png',
             data: base64Image
           }
+        },
+        {
+          type: 'text',
+          text: prompt
         }
       ]
     });
