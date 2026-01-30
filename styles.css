@@ -85,6 +85,23 @@ header {
   margin: 0;
   flex: 1;
   font-weight: 500;
+  display: inline-block;
+}
+
+.provider-name {
+  display: inline-block;
+  animation: subtlePulse 3s ease-in-out infinite;
+}
+
+@keyframes subtlePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
 }
 
 .cost-metrics {

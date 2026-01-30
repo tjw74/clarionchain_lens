@@ -30,7 +30,7 @@ const removeKeyBtn = document.getElementById('remove-key-btn');
 const providerCostsSection = document.getElementById('provider-costs-section');
 const providerCostsContent = document.getElementById('provider-costs-content');
 const providerCostsLoading = document.querySelector('.cost-loading');
-const aiProviderSubtitle = document.getElementById('ai-provider-subtitle');
+const aiProviderName = document.getElementById('ai-provider-name');
 
 let currentProvider = 'openai';
 let conversationHistory = [];
@@ -171,9 +171,9 @@ const providerShortNames = {
  * Update AI provider subtitle
  */
 function updateProviderSubtitle() {
-  if (aiProviderSubtitle) {
+  if (aiProviderName) {
     const providerName = providerShortNames[currentProvider] || 'Powered';
-    aiProviderSubtitle.textContent = `AI ${providerName}`;
+    aiProviderName.textContent = providerName;
   }
 }
 
