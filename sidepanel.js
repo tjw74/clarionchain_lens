@@ -13,7 +13,7 @@ const apiKeyInput = document.getElementById('api-key-input');
 const saveKeyBtn = document.getElementById('save-key-btn');
 const apiKeyStatus = document.getElementById('api-key-status');
 const manualSelectionCheckbox = document.getElementById('manual-selection');
-const analyzeBtn = document.getElementById('analyze-btn');
+const analysisCategories = document.getElementById('analysis-categories');
 const loadingIndicator = document.getElementById('loading-indicator');
 const errorMessage = document.getElementById('error-message');
 const chatContainer = document.getElementById('chat-container');
@@ -36,6 +36,7 @@ let conversationHistory = [];
 let currentChartImage = null;
 let currentChartMetadata = null;
 let currentConversationId = null;
+let currentCategory = 'market-analysis'; // Default category
 
 /**
  * Initialize side panel
@@ -43,6 +44,9 @@ let currentConversationId = null;
 async function init() {
   // Load saved API key for current provider
   await loadApiKeyStatus();
+  
+  // Update category UI state based on API key availability
+  updateCategoryUIState();
 
   // Event listeners
   providerSelect.addEventListener('change', async (e) => {
@@ -61,7 +65,18 @@ async function init() {
 
   saveKeyBtn.addEventListener('click', handleSaveApiKey);
   removeKeyBtn.addEventListener('click', handleRemoveCurrentApiKey);
-  analyzeBtn.addEventListener('click', handleAnalyze);
+  
+  // Set up category click handlers
+  const categoryButtons = analysisCategories.querySelectorAll('.category-btn');
+  categoryButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const category = btn.dataset.category;
+      if (!btn.disabled) {
+        handleCategoryClick(category);
+      }
+    });
+  });
+  
   sendBtn.addEventListener('click', handleSendMessage);
   chatInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -120,9 +135,9 @@ async function checkCurrentTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab.url || !tab.url.includes('bitview.space')) {
       showError('Please navigate to bitview.space to use this extension.');
-      analyzeBtn.disabled = true;
+      updateCategoryUIState(false);
     } else {
-      analyzeBtn.disabled = false;
+      updateCategoryUIState();
     }
   } catch (error) {
     console.error('Error checking tab:', error);
@@ -149,10 +164,7 @@ async function handleRemoveCurrentApiKey() {
   try {
     await removeApiKey(currentProvider);
     await loadApiKeyStatus();
-    
-    // Update analyze button state
-    const hasKey = await hasApiKey(currentProvider);
-    analyzeBtn.disabled = !hasKey;
+    updateCategoryUIState();
     
   } catch (error) {
     showError(`Failed to remove API key: ${error.message}`);
@@ -172,15 +184,14 @@ async function loadApiKeyStatus() {
     apiKeyStatus.textContent = '✓ API key saved';
     apiKeyStatus.className = 'status-message status-success';
     apiKeyActions.style.display = 'block';
-    analyzeBtn.disabled = false;
   } else {
     apiKeyInput.value = '';
     apiKeyInput.placeholder = 'Enter your API key';
     apiKeyStatus.textContent = 'No API key configured';
     apiKeyStatus.className = 'status-message status-warning';
     apiKeyActions.style.display = 'none';
-    analyzeBtn.disabled = true;
   }
+  updateCategoryUIState();
 }
 
 /**
@@ -280,7 +291,7 @@ async function handleSaveApiKey() {
     
     apiKeyStatus.textContent = '✓ API key saved and validated';
     apiKeyStatus.className = 'status-message status-success';
-    analyzeBtn.disabled = false;
+    updateCategoryUIState();
     
     // Clear input for security
     apiKeyInput.value = '';
@@ -324,9 +335,30 @@ async function validateApiKey(provider, apiKey) {
 }
 
 /**
- * Handle analyze button click
+ * Update category UI state based on API key availability
  */
-async function handleAnalyze() {
+async function updateCategoryUIState(isOnBitview = true) {
+  const hasKey = await hasApiKey(currentProvider);
+  const enabled = hasKey && isOnBitview;
+  
+  const categoryButtons = analysisCategories.querySelectorAll('.category-btn');
+  categoryButtons.forEach(btn => {
+    btn.disabled = !enabled;
+  });
+}
+
+/**
+ * Handle category click
+ */
+async function handleCategoryClick(category) {
+  currentCategory = category;
+  await handleAnalyze(category);
+}
+
+/**
+ * Handle analyze with category
+ */
+async function handleAnalyze(category = currentCategory) {
   // Reset UI for new analysis
   hideError();
   
@@ -343,8 +375,17 @@ async function handleAnalyze() {
   chatInput.disabled = true;
   sendBtn.disabled = true;
   
+  // Update active category visual state
+  const categoryButtons = analysisCategories.querySelectorAll('.category-btn');
+  categoryButtons.forEach(btn => {
+    btn.classList.remove('category-btn-active');
+    if (btn.dataset.category === category) {
+      btn.classList.add('category-btn-active');
+    }
+  });
+  
   loadingIndicator.style.display = 'block';
-  analyzeBtn.disabled = true;
+  updateCategoryUIState(false); // Disable categories during analysis
 
   try {
     // Get current tab
@@ -403,6 +444,7 @@ async function handleAnalyze() {
         imageDataUrl,
         metadata,
         provider: currentProvider,
+        category: category,
         conversationHistory: []
       }
     });
@@ -431,7 +473,7 @@ async function handleAnalyze() {
     showError(error.message || 'An error occurred during analysis');
   } finally {
     loadingIndicator.style.display = 'none';
-    analyzeBtn.disabled = false;
+    updateCategoryUIState(); // Re-enable categories
   }
 }
 
@@ -489,6 +531,7 @@ async function loadMostRecentConversation() {
       currentChartImage = recent.chartImage;
       currentChartMetadata = recent.metadata;
       currentProvider = recent.provider;
+      currentCategory = recent.category || 'market-analysis'; // Default to market-analysis for old conversations
       
       // Update provider select to match
       providerSelect.value = currentProvider;
@@ -530,7 +573,8 @@ async function saveCurrentConversation() {
         currentProvider,
         conversationHistory,
         currentChartImage,
-        currentChartMetadata || {}
+        currentChartMetadata || {},
+        currentCategory
       );
     }
   } catch (error) {

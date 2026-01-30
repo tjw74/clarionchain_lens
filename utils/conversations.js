@@ -21,9 +21,10 @@ export async function getAllConversations() {
  * @param {Array} messages - Array of message objects {role, content}
  * @param {string} chartImage - Base64 image data URL
  * @param {Object} metadata - Chart metadata
+ * @param {string} category - Prompt category used
  * @returns {Promise<string>} Conversation ID
  */
-export async function saveConversation(provider, messages, chartImage, metadata) {
+export async function saveConversation(provider, messages, chartImage, metadata, category = 'market-analysis') {
   const conversations = await getAllConversations();
   
   // Create new conversation
@@ -32,6 +33,7 @@ export async function saveConversation(provider, messages, chartImage, metadata)
     id: conversationId,
     timestamp: Date.now(),
     provider,
+    category,
     messages: [...messages], // Copy array
     chartImage,
     metadata: { ...metadata } // Copy object

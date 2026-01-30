@@ -6,27 +6,19 @@
 const GOOGLE_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent';
 const DEFAULT_MODEL = 'gemini-pro-vision';
 
+import { getSystemPrompt, getUserPrompt } from '../utils/prompts.js';
+
 /**
  * Create analysis prompt for Bitcoin chart
  * @param {Object} metadata - Chart metadata
+ * @param {string} category - Prompt category
  * @returns {string} Analysis prompt
  */
-function createAnalysisPrompt(metadata) {
-  return `Analyze this Bitcoin chart from ${metadata.url || 'bitview.space'}.
-
-Chart Title: ${metadata.title || 'Bitcoin Price Chart'}
-Timestamp: ${metadata.timestamp || new Date().toISOString()}
-
-You are a professional Bitcoin on-chain market analyst. Provide structured technical and on-chain insights:
-
-1. Identify trend direction (bullish, bearish, or neutral)
-2. Identify key support and resistance levels
-3. Assess volatility regime (low, moderate, high)
-4. Provide on-chain implications based on chart patterns
-5. Present 2-3 scenarios: bullish, base case, and bearish
-6. State clear invalidation conditions for each scenario
-
-Be concise and professional. Avoid giving financial advice. Focus on objective technical and on-chain analysis.`;
+function createAnalysisPrompt(metadata, category = 'market-analysis') {
+  const systemPrompt = getSystemPrompt(category, metadata);
+  const userPrompt = getUserPrompt(metadata);
+  // Google combines system and user prompts
+  return `${systemPrompt}\n\n${userPrompt}`;
 }
 
 /**
@@ -38,7 +30,7 @@ Be concise and professional. Avoid giving financial advice. Focus on objective t
  * @param {Array} conversationHistory - Previous conversation messages
  * @returns {Promise<string>} Analysis text
  */
-export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = null, conversationHistory = []) {
+export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = null, conversationHistory = [], category = 'market-analysis') {
   if (!apiKey) {
     throw new Error('Google API key is required');
   }
@@ -48,7 +40,7 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
     ? imageDataUrl.split(',')[1] 
     : imageDataUrl;
 
-  const prompt = createAnalysisPrompt(metadata);
+  const prompt = createAnalysisPrompt(metadata, category);
 
   const requestBody = {
     contents: [

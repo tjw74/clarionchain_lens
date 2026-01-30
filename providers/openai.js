@@ -3,39 +3,20 @@
  * Uses GPT-4 Vision for chart analysis
  */
 
+import { getSystemPrompt, getUserPrompt } from '../utils/prompts.js';
+
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const DEFAULT_MODEL = 'gpt-4o'; // Vision-capable model
 
 /**
  * Create analysis prompt for Bitcoin chart
  * @param {Object} metadata - Chart metadata
+ * @param {string} category - Prompt category
  * @returns {Object} System and user prompts
  */
-function createAnalysisPrompt(metadata) {
-  const systemPrompt = `You are a professional Bitcoin on-chain market analyst. Analyze the provided Bitcoin price chart and provide structured technical and on-chain insights.
-
-Your analysis must:
-1. Identify trend direction (bullish, bearish, or neutral)
-2. Identify key support and resistance levels
-3. Assess volatility regime (low, moderate, high)
-4. Provide on-chain implications based on chart patterns
-5. Present 2-3 scenarios: bullish, base case, and bearish
-6. State clear invalidation conditions for each scenario
-
-Guidelines:
-- Be concise and professional
-- Avoid giving financial advice
-- Focus on objective technical and on-chain analysis
-- Use clear, structured formatting
-- Base conclusions on visible chart patterns and indicators`;
-
-  const userPrompt = `Analyze this Bitcoin chart from ${metadata.url || 'bitview.space'}.
-
-Chart Title: ${metadata.title || 'Bitcoin Price Chart'}
-Timestamp: ${metadata.timestamp || new Date().toISOString()}
-
-Please provide a comprehensive analysis following the structure outlined in your instructions.`;
-
+function createAnalysisPrompt(metadata, category = 'market-analysis') {
+  const systemPrompt = getSystemPrompt(category, metadata);
+  const userPrompt = getUserPrompt(metadata);
   return { systemPrompt, userPrompt };
 }
 
@@ -48,7 +29,7 @@ Please provide a comprehensive analysis following the structure outlined in your
  * @param {Array} conversationHistory - Previous conversation messages
  * @returns {Promise<string>} Analysis text
  */
-export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = null, conversationHistory = []) {
+export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = null, conversationHistory = [], category = 'market-analysis') {
   if (!apiKey) {
     throw new Error('OpenAI API key is required');
   }
@@ -58,7 +39,7 @@ export async function analyzeChart(imageDataUrl, metadata, apiKey, onChunk = nul
     ? imageDataUrl.split(',')[1] 
     : imageDataUrl;
 
-  const { systemPrompt, userPrompt } = createAnalysisPrompt(metadata);
+  const { systemPrompt, userPrompt } = createAnalysisPrompt(metadata, category);
 
   // Build messages array
   const messages = [

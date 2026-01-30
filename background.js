@@ -190,7 +190,7 @@ async function handleGetProviderCosts(provider, apiKey) {
  * Handle chart analysis request
  * This runs in the background script to keep API keys secure
  */
-async function handleAnalyzeChart({ imageDataUrl, metadata, provider, conversationHistory = [] }) {
+async function handleAnalyzeChart({ imageDataUrl, metadata, provider, category = 'market-analysis', conversationHistory = [] }) {
   // Rate limiting
   const now = Date.now();
   if (now - lastAnalysisTime < MIN_ANALYSIS_INTERVAL) {
@@ -207,8 +207,8 @@ async function handleAnalyzeChart({ imageDataUrl, metadata, provider, conversati
   // Get provider module
   const providerModule = getProvider(provider);
 
-  // Analyze chart with conversation history
-  const result = await providerModule.analyzeChart(imageDataUrl, metadata, apiKey, null, conversationHistory);
+  // Analyze chart with conversation history and category
+  const result = await providerModule.analyzeChart(imageDataUrl, metadata, apiKey, null, conversationHistory, category);
   
   // Extract analysis content and usage
   let analysis;
