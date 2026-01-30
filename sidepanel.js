@@ -30,6 +30,7 @@ const removeKeyBtn = document.getElementById('remove-key-btn');
 const providerCostsSection = document.getElementById('provider-costs-section');
 const providerCostsContent = document.getElementById('provider-costs-content');
 const providerCostsLoading = document.querySelector('.cost-loading');
+const aiProviderSubtitle = document.getElementById('ai-provider-subtitle');
 
 let currentProvider = 'openai';
 let conversationHistory = [];
@@ -45,6 +46,9 @@ async function init() {
   // Load saved API key for current provider
   await loadApiKeyStatus();
   
+  // Update provider subtitle
+  updateProviderSubtitle();
+  
   // Update category UI state based on API key availability
   updateCategoryUIState();
 
@@ -54,6 +58,7 @@ async function init() {
     await saveCurrentConversation();
     
     currentProvider = e.target.value;
+    updateProviderSubtitle(); // Update subtitle when provider changes
     await loadApiKeyStatus();
     await updateProviderCosts();
     
@@ -152,6 +157,25 @@ const providerNames = {
   anthropic: 'Anthropic (Claude)',
   google: 'Google (Gemini)'
 };
+
+/**
+ * Provider short names for subtitle
+ */
+const providerShortNames = {
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+  google: 'Google'
+};
+
+/**
+ * Update AI provider subtitle
+ */
+function updateProviderSubtitle() {
+  if (aiProviderSubtitle) {
+    const providerName = providerShortNames[currentProvider] || 'Powered';
+    aiProviderSubtitle.textContent = `AI ${providerName}`;
+  }
+}
 
 /**
  * Handle removing current provider's API key
@@ -535,6 +559,7 @@ async function loadMostRecentConversation() {
       
       // Update provider select to match
       providerSelect.value = currentProvider;
+      updateProviderSubtitle(); // Update subtitle when loading conversation
       await loadApiKeyStatus();
       
       // Restore UI
