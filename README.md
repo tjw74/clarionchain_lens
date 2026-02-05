@@ -26,7 +26,6 @@ clarionchainai_ext/
 │   ├── anthropic.js      # Anthropic Claude implementation
 │   └── google.js         # Google Gemini implementation
 └── utils/
-    ├── capture.js        # Chart capture and cropping utilities
     └── storage.js        # Secure API key storage utilities
 ```
 
